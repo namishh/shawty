@@ -1,4 +1,5 @@
 #include "response.h"
+#include "../database/database.h"
 #include "../server/server.h"
 #include <fcntl.h>
 #include <stdio.h>
@@ -83,7 +84,7 @@ void render_static_file(struct Response *response, char *filename,
   response->size = response_size;
 }
 
-void parse_url_duration(const char *str, char **url, char **duration) {
+void parse_url(const char *str, char **url) {
   char *token;
   char *temp_str = strdup(str);
 
@@ -93,15 +94,6 @@ void parse_url_duration(const char *str, char **url, char **duration) {
     token = strtok(NULL, "=&");
     if (token != NULL) {
       *url = strdup(token);
-    }
-  }
-
-  // Get the duration
-  token = strtok(NULL, "=&");
-  if (token != NULL && strcmp(token, "duration") == 0) {
-    token = strtok(NULL, "=&");
-    if (token != NULL) {
-      *duration = strdup(token);
     }
   }
 
@@ -119,6 +111,17 @@ void decode_url(char *str) {
       memmove(p + 1, p + 3, strlen(p + 3) + 1);
     }
     p++;
+  }
+}
+
+char *get_substring_after_route(char *str) {
+  char *route = "/s/";
+  char *found = strstr(str, route);
+
+  if (found != NULL) {
+    return found + strlen(route);
+  } else {
+    return NULL;
   }
 }
 
@@ -165,6 +168,20 @@ void render_html_element(struct Response *response, char *header,
   response->size = response_size;
 }
 
+void reroute(struct Response *response, char *header, char *target) {
+  char *status = "HTTP/1.1 301 Moved Permanently\r\n";
+  snprintf(header, BUFFER_SIZE, "%sLocation: %s\r\n\r\n", status, target);
+
+  size_t response_size = strlen(header);
+  char *response_body = (char *)malloc(response_size * sizeof(char));
+
+  memcpy(response_body, header, strlen(header));
+
+  response->status = status;
+  response->body = response_body;
+  response->size = response_size;
+}
+
 struct Response response_constructor(struct Request request) {
   char *header = (char *)malloc(BUFFER_SIZE * sizeof(char));
   struct Response response;
@@ -172,17 +189,28 @@ struct Response response_constructor(struct Request request) {
     if (strcmp(request.URI, "/") == 0 ||
         strstr(request.URI, "/?url=") != NULL) {
       render_static_file(&response, "./public/index.html", header);
+    } else if (strstr(request.URI, "/s/") != NULL) {
+      char *shortened = get_substring_after_route(request.URI);
+      struct URL url = get_url(shortened);
+      if (strcmp(url.target, "") != 0) {
+        reroute(&response, header, url.target);
+      } else {
+        render_static_file(&response, "./public/404_route.html", header);
+      }
+    } else if (strcmp(request.URI, "/links") == 0) {
+      char *template = generate_html_list();
+      printf("TEMPLATE\n%s\n", template);
+      render_html_element(&response, header, template);
     } else {
       render_static_file(&response, "./public/404.html", header);
     }
   } else if (strcmp(request.method, "POST") == 0) {
     char *url;
-    char *duration;
 
-    parse_url_duration(request.body, &url, &duration);
+    parse_url(request.body, &url);
     decode_url(url);
 
-    printf("%s, %s\n", url, duration);
+    printf("%s", url);
 
     char *message;
     char *color;
@@ -197,6 +225,7 @@ struct Response response_constructor(struct Request request) {
       } else {
         message = "URL Shortened";
         color = "green-400";
+        insert_url(url);
       }
     }
 
@@ -204,6 +233,13 @@ struct Response response_constructor(struct Request request) {
     sprintf(template, "<p class='text-%s mx-4 mt-2'>%s</p>", color, message);
 
     render_html_element(&response, header, template);
+  } else if (strcmp(request.method, "DELETE") == 0) {
+    if (strcmp(request.URI, "/links") == 0) {
+      delete_all_urls();
+      char template[] =
+          "<p class='text-red-400 mx-4 mt-2'>All URLs deleted</p>";
+      render_html_element(&response, header, template);
+    }
   } else {
     render_static_file(&response, "./public/405.html", header);
   }

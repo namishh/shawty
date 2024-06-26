@@ -8,15 +8,11 @@ struct URL {
   char *target;
 };
 
-struct Date {
-  int day;
-  int month;
-  int year;
-};
-
 void seed_db();
 void insert_url(char *target);
-void check_if_shortened_exists(char *shortened);
-char *get_target(char *shortened);
+struct URL get_url(char *shortened);
+void delete_url(char *shortened);
+char *generate_html_list();
+void delete_all_urls();
 
 #endif // !DATABASE
