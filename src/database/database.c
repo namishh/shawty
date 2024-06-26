@@ -195,12 +195,11 @@ char *generate_html_list() {
     char webtarget[40];
     sprintf(webtarget, "http://localhost:6969/s/%s", shortened);
     char tag[256];
-    sprintf(
-        tag,
-        "<li class='bg-gray-900/70 text-white p-3 my-2 "
-        "rounded-xl'><details><summary>%s | %s</"
-        "summary> <a href='%s' class='text-blue-400 my-2'>%s</a></details><li>",
-        shortened, target, webtarget, webtarget);
+    sprintf(tag,
+            "<li class='bg-gray-900/70 text-white p-3 my-2 "
+            "rounded-xl'><div class='flex flex-col'><p>%s | %s</"
+            "p> <a href='%s' class='text-blue-400 my-2'>%s</a></div><li>",
+            shortened, target, webtarget, webtarget);
 
     strcat(list, tag);
   }
