@@ -83,18 +83,109 @@ void render_static_file(struct Response *response, char *filename,
   response->size = response_size;
 }
 
+char *extract_url(const char *str) {
+  char *url_part = strstr(str, "url=");
+
+  if (url_part != NULL) {
+    // Move the pointer to the start of the URL
+    url_part += strlen("url=");
+    return url_part;
+  } else {
+    return NULL;
+  }
+}
+
+void decode_url(char *str) {
+  char *p = str;
+  char code[3] = {0};
+  int value;
+
+  while (*p) {
+    if (*p == '%') {
+      sscanf(p + 1, "%2x", &value);
+      *p = (char)value;
+      memmove(p + 1, p + 3, strlen(p + 3) + 1);
+    }
+    p++;
+  }
+}
+
+void render_json(struct Response *response, char *url, char *header) {
+  char *status = "HTTP/1.1 200 OK\r\n";
+  snprintf(header, BUFFER_SIZE, "%sContent-Type: application/json\r\n\r\n",
+           status);
+
+  char final_string[1000];
+  sprintf(final_string, "{\"url\": \"%s\"}", url);
+
+  size_t response_size = strlen(header) + strlen(final_string);
+  char *response_body = (char *)malloc(response_size * sizeof(char));
+
+  memcpy(response_body, header, strlen(header));
+  memcpy(response_body + strlen(header), final_string, strlen(final_string));
+
+  response->status = status;
+  response->body = response_body;
+  response->size = response_size;
+}
+
+int starts_with(const char *str, const char *prefix) {
+  size_t len_prefix = strlen(prefix);
+  return strncmp(str, prefix, len_prefix) == 0;
+}
+
+void render_html_element(struct Response *response, char *header,
+                         char *template) {
+  char *status = "HTTP/1.1 200 OK\r\n";
+  snprintf(header, BUFFER_SIZE, "%sContent-Type: text/html\r\n\r\n", status);
+
+  char final_string[10000];
+  sprintf(final_string, "%s", template);
+
+  size_t response_size = strlen(header) + strlen(final_string);
+  char *response_body = (char *)malloc(response_size * sizeof(char));
+
+  memcpy(response_body, header, strlen(header));
+  memcpy(response_body + strlen(header), final_string, strlen(final_string));
+
+  response->status = status;
+  response->body = response_body;
+  response->size = response_size;
+}
+
 struct Response response_constructor(struct Request request) {
   char *header = (char *)malloc(BUFFER_SIZE * sizeof(char));
   struct Response response;
   if (strcmp(request.method, "GET") == 0) {
-    if (strcmp(request.URI, "/") == 0) {
+    if (strcmp(request.URI, "/") == 0 ||
+        strstr(request.URI, "/?url=") != NULL) {
       render_static_file(&response, "./public/index.html", header);
     } else {
       render_static_file(&response, "./public/404.html", header);
     }
   } else if (strcmp(request.method, "POST") == 0) {
-    printf("POST request\n");
 
+    char *a = extract_url(request.body);
+    decode_url(a);
+    char *message;
+    char *color;
+    if (strcmp(a, "") == 0) {
+      message = "No URL provided";
+      color = "red-400";
+    } else {
+      if (starts_with(a, "https://") == 0) {
+        message = "URL is invalid";
+        color = "red-400";
+      } else {
+        message = "URL Shortened";
+        color = "green-400";
+      }
+    }
+
+    char template[1000];
+    sprintf(template, "<p class='text-%s mx-4 mt-2'>%s</p>", color, message);
+
+    render_html_element(&response, header, template);
   } else {
     render_static_file(&response, "./public/405.html", header);
   }

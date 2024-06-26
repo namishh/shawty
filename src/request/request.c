@@ -65,7 +65,6 @@ void parse_headers(char *header_fields) {
       break;
     }
     request_add_header(field);
-    printf("Field: %s\n", field);
     field = strtok(NULL, "\n");
   }
 }

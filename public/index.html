@@ -16,17 +16,18 @@
         <h1 class="text-4xl font-bold text-white">Shawty</h1>
         <p class="text-gray-400 mt-2 text-md">An URL Shortener written in pure C + HTMX</p>
       </div>
-      <form class="flex">
+      <form hx-trigger="submit" hx-post="/api" hx-target="#howdy"  class="flex">
         <input class="bg-gray-800 w-3/4 px-4 py-2 text-white rounded-l-xl focus:outline-none" autocomplete="off" type="text" name="url" id="url" placeholder="Enter URL">
 
-        <button class="bg-blue-400 w-1/4 py-2 rounded-r-xl">Shorten</button>
+        <button class="bg-blue-400 w-1/4 py-2 rounded-r-xl">Shorten</button> 
       </form> 
+      <div id="howdy"></div>
       <div class="mt-4">
         <div class="flex justify-between items-center p-2">
           <p class="text-white">Shortened URL(s)</p>
           <button class="bg-red-400 px-2 py-1 rounded-xl">Remove</button>
         </div>
-        <div class="bg-gray-800 mt-2 p-2 rounded-xl min-h-[20rem]">
+        <div id="#shortened" class="bg-gray-800 mt-2 p-2 rounded-xl min-h-[20rem]">
         </div>
     </div>
   </body>
