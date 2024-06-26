@@ -1,3 +1,4 @@
+#include "database/database.h"
 #include "request/request.h"
 #include "response/response.h"
 #include "server/server.h"
@@ -36,6 +37,7 @@ void start(struct Server *server) {
 }
 
 int main() {
+  // seed_db();
   struct Server server =
       server_constructor(AF_INET, SOCK_STREAM, 0, PORT, 3, INADDR_ANY, start);
 

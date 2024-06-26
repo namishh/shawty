@@ -83,21 +83,33 @@ void render_static_file(struct Response *response, char *filename,
   response->size = response_size;
 }
 
-char *extract_url(const char *str) {
-  char *url_part = strstr(str, "url=");
+void parse_url_duration(const char *str, char **url, char **duration) {
+  char *token;
+  char *temp_str = strdup(str);
 
-  if (url_part != NULL) {
-    // Move the pointer to the start of the URL
-    url_part += strlen("url=");
-    return url_part;
-  } else {
-    return NULL;
+  // Get the URL
+  token = strtok(temp_str, "=&");
+  if (token != NULL && strcmp(token, "url") == 0) {
+    token = strtok(NULL, "=&");
+    if (token != NULL) {
+      *url = strdup(token);
+    }
   }
+
+  // Get the duration
+  token = strtok(NULL, "=&");
+  if (token != NULL && strcmp(token, "duration") == 0) {
+    token = strtok(NULL, "=&");
+    if (token != NULL) {
+      *duration = strdup(token);
+    }
+  }
+
+  free(temp_str);
 }
 
 void decode_url(char *str) {
   char *p = str;
-  char code[3] = {0};
   int value;
 
   while (*p) {
@@ -164,16 +176,22 @@ struct Response response_constructor(struct Request request) {
       render_static_file(&response, "./public/404.html", header);
     }
   } else if (strcmp(request.method, "POST") == 0) {
+    char *url;
+    char *duration;
 
-    char *a = extract_url(request.body);
-    decode_url(a);
+    parse_url_duration(request.body, &url, &duration);
+    decode_url(url);
+
+    printf("%s, %s\n", url, duration);
+
     char *message;
     char *color;
-    if (strcmp(a, "") == 0) {
+
+    if (strcmp(url, "") == 0) {
       message = "No URL provided";
       color = "red-400";
     } else {
-      if (starts_with(a, "https://") == 0) {
+      if (starts_with(url, "https://") == 0) {
         message = "URL is invalid";
         color = "red-400";
       } else {
