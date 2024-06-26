@@ -1,3 +1,4 @@
 shawty - a url shortener written entirely in c and htmx
 
-this is also the creation of a new full stack framwork called **"htc"** which is a combination of htmx, tailwindcss, and c
+https://github.com/chadcat7/shawty/assets/68964499/7eec683e-4f2d-461e-a931-9e1e28d42110
+
