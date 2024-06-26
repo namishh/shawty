@@ -1,3 +1,5 @@
+#include "request/request.h"
+#include "response/response.h"
 #include "server/server.h"
 #include <stdio.h>
 #include <string.h>
@@ -18,11 +20,15 @@ void start(struct Server *server) {
     memset(buffer, 0, BUFFER_SIZE * sizeof(char));
     read(new_socket, buffer, BUFFER_SIZE);
 
-    printf("===========BUFFER========\n");
-    printf("%s\n", buffer);
-    printf("=========================\n");
+    struct Request request = request_constructor(buffer);
 
-    send(new_socket, "", 1024, 0);
+    printf("Method: %s\n", request.method);
+    printf("URI: %s\n", request.URI);
+    printf("Body: %s\n", request.body);
+
+    struct Response response = response_constructor(request);
+
+    send(new_socket, response.body, response.size, 0);
 
     // close the new_socket
     close(new_socket);
